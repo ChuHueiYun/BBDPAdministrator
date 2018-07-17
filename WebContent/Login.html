@@ -1,0 +1,67 @@
+﻿<html>
+	<head>
+		<meta charset="utf-8"> 
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>BBDP 管理者介面</title>
+		<link rel="Shortcut Icon" type="image/x-icon" href="img/frame/icon.ico">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+		<link href="css/frame.css" rel="stylesheet">
+		<script src="js/b64.js"></script>
+	</head>
+	<body>
+		<div class="container-fluid">
+			<div class="col-md-4 col-sm-3"></div>
+			<div class="col-md-4 col-sm-6" style="padding-left: 5vw; padding-right: 5vw;">
+				<div class="row" style="margin-top: 5vh; margin-bottom: 5vh;">
+					<img src="img/frame/logo.png" class="img-responsive" style="align: center;"></img>
+				</div>
+				<div class="row">
+					<h2 style="font-weight: bold; color: #000000; text-align:center;">BBDP 管理者</h2>
+					<h3 style="font-weight: bold; color: 000000; text-align:center;">登入</h3>
+				</div>
+				<div class="row" style="margin-top: 4vh;">
+					<h6 id="loginMessage" style="color: red;"></h6>
+				</div>
+				<div class="row" style="margin-top: 2vh;">
+					<input type="text" class="form-control" id="account" style="align: center;" placeholder="帳號" />
+				</div>
+				<div class="row" style="margin-top: 2vh;">
+					<input type="password" class="form-control" id="password" placeholder="密碼" style="align: center;" />
+				</div>
+				<div class="row" style="margin-top: 4vh;">
+					<button type="button" class="btn btn-info center-block" onclick="clickLoginBtn()">登入</button>
+				</div>
+			</div>
+			<div class="col-md-4 col-sm-3"></div>
+		</div>
+		<script>
+			function clickLoginBtn() {
+				$.ajax({
+					type: "POST",
+					url: "AdministratorLoginServlet",
+					data: {
+						state: "login",
+						account: $("#account").val(),
+						password: utf8_to_b64($("#password").val())
+					},
+					dataType: "text",
+					success: function(response) {
+						$("#loginMessage").empty();
+						if (response == "loginSuccess") {
+							window.location.href = 'Homepage.html';
+						}
+						else {
+							$("#loginMessage").text("登入失敗");
+						}
+					},
+					error: function() {
+						console.log("BBDPAdministrator Login.html clickLoginBtn() error");
+					}
+				});
+			}
+		</script>
+	</body>
+</html>

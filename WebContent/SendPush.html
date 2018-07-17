@@ -1,0 +1,212 @@
+﻿<html>
+	<head>
+		<meta charset="utf-8"> 
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>BBDP 管理者介面</title>
+		<link rel="Shortcut Icon" type="image/x-icon" href="img/frame/icon.ico">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+		<link href="css/frame.css" rel="stylesheet">
+		<style>
+			.nav-pills > li > a, .nav-pills > li > a:focus {
+				background-color: white;
+				color: #3796bf;
+			}
+			.nav-pills > li > a:hover {
+				color: #3796bf;
+			}
+			.nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus {
+				background-color: #3796bf;
+				color: white;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- navbar -->
+		<div id="menu"></div>
+		<div class="container-fluid">
+			<div class="col-md-2 col-sm-1"></div>
+			<div class="col-md-8 col-sm-10">
+				<div class="row" style="margin-top: 70px;">
+					<div class="panel panel-default" style="border: 4px solid #f0f0f0;">
+						<div class="panel-heading" style="background-color: white;">
+							<div class="row">
+								<div class="col-md-4 col-sm-10">
+									<div class="form-group">
+										<label for="changeTarget">發送對象</label>
+										<select class="form-control" id="changeTarget" onChange="changeTarget(this)">
+											<optgroup label="病患端">
+												<option value="aPatient" selected="selected">發送給一名病患</option>
+												<option value="allPatient">發送給所有病患</option>
+											</optgroup>
+											<optgroup label="醫生端">
+												<option value="aDoctor">發送給一名醫師</option>
+												<option value="allDoctor">發送給所有醫師</option>
+											</optgroup>
+										</select>
+									</div>
+									<div class="form-group">
+										<label for="ID">病患 ID</label>
+										<input type="text" class="form-control" id="ID" placeholder="patientID" />
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="panel-body">
+							<div class="row">
+								<div class="col-md-10 col-sm-10">
+									<div class="form-group">
+										<label for="title">標題</label>
+										<input type="text" class="form-control" id="title" placeholder="title" />
+									</div>
+									<div class="form-group">
+										<label for="body">內容</label>
+										<input type="text" class="form-control" id="body" placeholder="body" />
+									</div>
+									<div class="form-group">
+										<label for="hyperlink">連結</label>
+										<input type="text" class="form-control" id="hyperlink" placeholder="hyperlink" />
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="panel-footer" style="background-color: white;">
+							<button type="button" class="btn btn-info" onclick="clickPushBtn()">發送</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-2 col-sm-1"></div>
+		</div>
+		<script src="js/frame.js"></script>
+		<script>
+			function changeTarget(selected) {
+				$("input#ID").val("");
+				if (selected.value == "aPatient") {
+					$("input#ID").attr("disabled", false);
+					$("input#ID").attr("placeholder", "patientID");
+					$("input#ID").siblings("label").text("病患 ID");
+				}
+				else if (selected.value == "allPatient") {
+					$("input#ID").attr("disabled", true);
+					$("input#ID").attr("placeholder", "");
+					$("input#ID").siblings("label").text("病患 ID");
+				}
+				else if (selected.value == "aDoctor") {
+					$("input#ID").attr("disabled", false);
+					$("input#ID").attr("placeholder", "doctorID");
+					$("input#ID").siblings("label").text("醫師 ID");
+				}
+				else if (selected.value == "allDoctor") {
+					$("input#ID").attr("disabled", true);
+					$("input#ID").attr("placeholder", "");
+					$("input#ID").siblings("label").text("醫師 ID");
+				}
+			}
+			function clickPushBtn() {
+				var type = $('#changeTarget').val();
+				if ((type == "aPatient" || type == "aDoctor") && !$.isNumeric($("input#ID").val())) {	// a patient or a doctor
+					showMessageModal("ID 欄位不可為空");
+				}
+				else if ($("input#title").val() == "") {
+					showMessageModal("標題 欄位不可為空");
+				}
+				else if ($("input#body").val() == "") {
+					showMessageModal("內容 欄位不可為空");
+				}
+				else if ($("input#hyperlink").val() == "") {
+					showMessageModal("連結 欄位不可為空");
+				}
+				else {
+					pushMessage();
+				}
+			}
+			function pushMessage() {
+				$.ajax({
+					type: "POST",
+					url: "PushServlet",
+					data: {
+						state: $('#changeTarget').val(),
+						ID: $("#ID").val(),
+						title: $("#title").val(),
+						body: $("#body").val(),
+						hyperlink: $("#hyperlink").val()
+					},
+					dataType: "json",
+					success: function(response) {
+						if(response.state == "aDoctor" && response.message == "success") {
+							sendWebsocketMessage($("#ID").val(), $("#title").val(), $("#body").val(), $("#hyperlink").val());
+						}
+						else if (response.state == "allDoctor" && response.message == "success") {
+							for (var i=0; i<response.doctorIDs.length; i++) {
+								sendWebsocketMessage(response.doctorIDs[i], $("#title").val(), $("#body").val(), $("#hyperlink").val());
+							}
+						}
+						else {
+							showMessageModal(response.message);
+						}
+					},
+					error: function() {
+						console.log("BBDPAdministrator SendPush.html pushMessage() error");
+					}
+				});
+			}
+			function sendWebsocketMessage(doctorID, title, body, hyperlink) {
+				var message = "{\"doctorID\":\"" + doctorID + "\",\"patientID\":\"BBDPAdmin\",\"option\":\"administratorPush\",\"title\":\"" + title + "\",\"body\":\"" + body + "\",\"hyperlink\":\"" + hyperlink + "\",\"type\":\"administratorPush\"}";		// 要傳給醫生的訊息
+				var websocket = new WebSocket('ws://140.121.197.130:8004/BBDPDoctor/PushServerEndpoint');
+				websocket.onopen = function() {
+					this.send(message);
+					this.close();
+				};
+				websocket.onmessage = function(event) {
+					this.close();
+				};
+				websocket.onerror = function() {};
+				websocket.onclose = function(event) {};
+				
+				// 儲存通知
+				$.ajax({
+					type: "POST",
+					url: "http://140.121.197.130:8004/BBDPDoctor/NotificationServlet",		// 沒錯!是BBDPDoctor
+					data: {
+						option: "newRemindPush",
+						message: message
+					},
+					dataType: "text",
+					success: function(response) {
+						
+					},
+					error: function() {
+						console.log("SendPush.html sendWebsocketMessage error");
+					}
+				});
+			}
+			function showMessageModal(message) {
+				$("body").append(
+						"		<div id='messageModal' class='modal fade' role='dialog'>" + "\n" + 
+						"			<div class='modal-dialog modal-sm'>" + "\n" + 
+						"				<div class='modal-content'>" + "\n" + 
+						"					<div class='modal-header'>" + "\n" + 
+						"						<button type='button' class='close' data-dismiss='modal' onclick='removeMessageModal()'>&times;</button>" + "\n" + 
+						"						<h4  class='modal-title'>訊息</h4>" + "\n" + 
+						"					</div>" + "\n" + 
+						"					<div class='modal-body'>" + "\n" + 
+						"						<p>" + message + "</p>" + "\n" + 
+						"					</div>" + "\n" + 
+						"					<div class='modal-footer'>" + "\n" + 
+						"						<button type='button' class='btn btn-info' data-dismiss='modal' onclick='removeMessageModal()'>確定</button>" + "\n" + 
+						"					</div>" + "\n" + 
+						"				</div" + "\n" + 
+						"			</div>" + "\n" + 
+						"		</div>" + "\n");
+				$("#messageModal").modal("show");
+			}
+			function removeMessageModal() {
+				$("#messageModal").hide();
+				setTimeout(function(){ $("#messageModal").remove(); }, 2000);
+			}
+		</script>
+	</body>
+</html>
