@@ -138,11 +138,19 @@
 					success: function(response) {
 						if(response.state == "aDoctor" && response.message == "success") {
 							sendWebsocketMessage($("#ID").val(), $("#title").val(), $("#body").val(), $("#hyperlink").val());
+							showMessageModal("發送成功");
+							cleanInput();
 						}
-						else if (response.state == "allDoctor" && response.message == "success") {
+						else if(response.state == "allDoctor" && response.message == "success") {
 							for (var i=0; i<response.doctorIDs.length; i++) {
 								sendWebsocketMessage(response.doctorIDs[i], $("#title").val(), $("#body").val(), $("#hyperlink").val());
 							}
+							showMessageModal("發送成功");
+							cleanInput();
+						}
+						else if((response.state == "aPatient" || response.state == "allPatient") && response.message == "發送成功") {
+							showMessageModal(response.message);
+							cleanInput();
 						}
 						else {
 							showMessageModal(response.message);
@@ -206,6 +214,13 @@
 			function removeMessageModal() {
 				$("#messageModal").hide();
 				setTimeout(function(){ $("#messageModal").remove(); }, 2000);
+			}
+			function cleanInput() {
+				$("input#ID").val("");
+				$("input#title").val("");
+				$("input#body").val("");
+				$("input#hyperlink").val("");
+				$("select").val("aPatient");
 			}
 		</script>
 	</body>
